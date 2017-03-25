@@ -24,34 +24,32 @@ public class Cliente {
 	// should bigger than the file to be downloaded
 	//Servidor debe de especificar tamaño archivo antes de descarga
 
+	public final static String HOLA = "HOLA";
+	
 	private Socket socket;
 	private InputStream inS;
 	private OutputStream outS;
 	private BufferedReader in;
 	private PrintWriter out;
-	private boolean descargando;
+	private boolean descargando = false;
 	private int bytesRead;
 	private int current = 0;
 	private FileOutputStream fos = null;
 	private BufferedOutputStream bos = null;
-	private ArrayList<String> listaDeArchivos;
+	private String[] listaDeArchivos = null;
 
 	public Cliente() {
-		try {
-			this.socket = new Socket(SERVER, SOCKET_PORT);
-			this.inS = this.socket.getInputStream();
-			this.outS = this.socket.getOutputStream();
-			this.in = new BufferedReader(new InputStreamReader(this.inS));
-			this.out = new PrintWriter(this.outS, true);
-			this.descargando = false;
-			this.listaDeArchivos = new ArrayList<String>();
-			this.sendMessageToServer("HOLA");
-		}
-		catch (Exception e) {
-			System.out.println("Fail Opening de Client Socket: " + e.getMessage());
-		}
+
 	}
 
+	public String[] listaDeArchivos (){
+		return listaDeArchivos;
+	}
+	
+	public boolean descargando (){
+		return descargando;
+	}
+	
 	public synchronized void sendMessageToServer(String message) {
 		this.out.println(message);
 	}
@@ -68,8 +66,9 @@ public class Cliente {
 		}
 	}
 
-	public synchronized void startDownload(String archivo)
+	public void startDownload(String archivo)
 	{
+		descargando = true;
 		// receive file
 		byte [] mybytearray  = new byte [FILE_SIZE];
 		InputStream is;
@@ -113,54 +112,33 @@ public class Cliente {
 
 	}
 
-
-	public static void main (String [] args ) throws IOException {
-		int bytesRead;
-		int current = 0;
-		FileOutputStream fos = null;
-		BufferedOutputStream bos = null;
-		PrintWriter escritor = null;
-		BufferedReader lector = null;
-
-		String fromServer;
-		String fromUser;
-		boolean ejecutar = true;
-		try {
-
-			fromUser = "ENVIAR";
-
-			while(ejecutar){
-
-				if (fromUser.equals("ENVIAR")){
-					escritor.println(fromUser);
-				}
-
-				fromServer = lector.readLine();
-
-
-				if(fromServer.equals("ENVIANDO")){
-
-
-
-
-					fromServer = null;
-					fromUser = "OK";    	      
-					escritor.println(fromUser);
-
-				}
-
-				if(fromServer.equals("OK")){
-					ejecutar = false;
-				}
-
-			}
+	public String estadoConexion()
+	{
+		String estado = "No se ha establecido una conexión";
+		if (socket != null){
+		return socket.isConnected() && !socket.isClosed()? "Conexión Activa": "Conexión Cerrada";
 		}
-		finally {
-			if (fos != null) fos.close();
-			if (bos != null) bos.close();
+		return estado;
+	}
+	
+	public void conexion()
+	{
+		if (socket == null) {
+			try {
+				this.socket = new Socket(SERVER, SOCKET_PORT);
+				this.inS = this.socket.getInputStream();
+				this.outS = this.socket.getOutputStream();
+				this.in = new BufferedReader(new InputStreamReader(this.inS));
+				this.out = new PrintWriter(this.outS, true);
+				this.descargando = false;
+				
+				this.sendMessageToServer(HOLA);
+				this.listaDeArchivos = this.waitForMessageFromServer().split(";");
+			}
+			catch (Exception e) {
+				System.out.println("Fail Opening de Client Socket: " + e.getMessage());
+			}
+
 		}
 	}
-
-
-
 }

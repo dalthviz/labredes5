@@ -1,13 +1,20 @@
 package labredes.worker;
 
 import java.awt.FontFormatException;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+
+import labredes.servidor.Servidor;
 
 
 /**
@@ -84,6 +91,79 @@ public class Worker implements Runnable {
 		writer.println(msg);
 		if(SHOW_OUT)		System.out.println("Srv " + id + ">>SERV (envia): " + msg);
 	}
+	
+
+	  public void sendFile() throws IOException {
+	    FileInputStream fis = null;
+	    BufferedInputStream bis = null;
+	    OutputStream os = null;
+	    ServerSocket servsock = null;
+	    Socket sock = null;
+	    PrintWriter escritor = null;
+	    BufferedReader lector = null;
+	    String fromServer;
+	    String fromClient;
+	    boolean conexion = true;
+	    boolean transferencia = true;
+	    try {
+	      servsock = new ServerSocket(Servidor.PUERTO);
+	      
+	      while(conexion){
+
+	          System.out.println("Waiting...");
+	          sock = servsock.accept();
+	          System.out.println("Accepted connection : " + sock);
+	          conexion = !sock.isConnected();
+	      }
+	      
+	      while (transferencia) {
+	        try {
+	          escritor = new PrintWriter(sock.getOutputStream(), true);
+	          lector = new BufferedReader(new InputStreamReader(
+	    				sock.getInputStream()));
+	        
+	          
+	          fromClient = lector.readLine();
+	          System.out.println(fromClient);
+	          // send file
+	          if(fromClient.equals("ENVIAR")){
+
+	        	  fromServer = "ENVIANDO";
+	              escritor.println(fromServer);
+	                  
+	              File myFile = new File (Servidor.FILE_TO_SEND);
+	              byte [] mybytearray  = new byte [(int)myFile.length()];
+	              fis = new FileInputStream(myFile);
+	              bis = new BufferedInputStream(fis);
+	              bis.read(mybytearray,0,mybytearray.length);
+	              os = sock.getOutputStream();
+	              System.out.println("Sending " + Servidor.FILE_TO_SEND + "(" + mybytearray.length + " bytes)");
+	              os.write(mybytearray,0,mybytearray.length);
+	              os.flush();
+	              System.out.println("Done.");             
+	        	  
+	          }
+	          
+	          if(fromClient.equals("OK"))
+	          {
+	        	  transferencia = false;
+	        	  fromServer = "OK";
+	        	  escritor.println(fromServer);
+	          }
+	          
+	          }
+	        finally {
+	          if (bis != null) bis.close();
+	          if (os != null) os.close();
+	          if (sock!=null) sock.close();
+	        }
+	      }
+	    }
+	    finally {
+	      if (servsock != null) servsock.close();
+	    }
+	  }
+	
 	/**
 	 * Metodo que establece el protocolo de comunicacion con el punto de atencion.
 	  */
@@ -104,9 +184,7 @@ public class Worker implements Runnable {
 				throw new FontFormatException(linea);
 			}
 			
-			// ////////////////////////////////////////////////////////////////////////
-			// Envia el status del servidor y recibe los algoritmos de codificacion
-			// ////////////////////////////////////////////////////////////////////////
+			//TODO Deberia enviar lista con nombres de archivos divididos por ';'
 			write(writer, OK);
 			
 			System.out.println("Thread " + id + "Terminando\n");
