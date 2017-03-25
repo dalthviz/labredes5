@@ -1,4 +1,4 @@
-package caso3ClientServerSinSeguridad;
+package labredes.worker;
 
 import java.awt.FontFormatException;
 import java.io.BufferedReader;
@@ -37,7 +37,7 @@ public class Worker implements Runnable {
 	public static final String TAMANO = "Tamaño archivo seleccionado";
 	public static final String PARAR = "Parar transferencia";
 	public static final String SEGUIR = "Seguir transferencia";
-	public static final String EMPEZAR = "Emperzar transferencia"
+	public static final String EMPEZAR = "Emperzar transferencia";
 	public static final String SEPARADOR = ":";
 	public static final String HOLA = "HOLA";
 	public static final String INIT = "INIT";
@@ -108,95 +108,7 @@ public class Worker implements Runnable {
 			// Envia el status del servidor y recibe los algoritmos de codificacion
 			// ////////////////////////////////////////////////////////////////////////
 			write(writer, OK);
-			linea = read(reader);
-			if (!(linea.contains(SEPARADOR) && linea.split(SEPARADOR)[0].equals(ALGORITMOS))) {
-				write(writer, ERROR_FORMATO);
-				throw new FontFormatException(linea);
-			}
-			// Verificar los algoritmos enviados
-			String[] algoritmos = linea.split(SEPARADOR);
-			// Comprueba y genera la llave simetrica para comunicarse con el
-			// servidor.
 			
-			// Comprueba que el algoritmo asimetrico sea simetrico y reconocido.
-			if (!(algoritmos[1].equals(BLOWFISH)
-					||algoritmos[1].equals(AES)
-					||algoritmos[1].equals(DES)
-					||algoritmos[1].equals(RC4))) {
-				write(writer, "ERROR: Algoritmo no soportado o no reconocido: " + algoritmos[1] + ". Cerrando conexion");
-				throw new NoSuchAlgorithmException();
-			}
-
-			// Comprueba que el algoritmo asimetrico sea RSA.
-			if (!algoritmos[2].equals(RSA)) {
-				write(writer, "ERROR: Algoritmo no soportado o no reconocido: " + algoritmos[1] + ". Cerrando conexion");
-				throw new NoSuchAlgorithmException();
-			}
-			// Comprueba que el algoritmo HMAC sea valido.
-			if (!(algoritmos[3].equals(HMACMD5) || algoritmos[3].equals(HMACSHA1) || algoritmos[3]
-					.equals(HMACSHA256))) {
-				write(writer, "ERROR: Algoritmo no soportado o no reconocido: " + algoritmos[3] + " . Cerrando conexion");
-				throw new NoSuchAlgorithmException();
-			}
-
-			// Confirmando al cliente que los algoritmos son soportados.
-			write(writer, OK);
-
-			// ////////////////////////////////////////////////////////////////////////
-			// Recibiendo el certificado del cliente el certificado
-			// ////////////////////////////////////////////////////////////////////////
-			
-			linea = read(reader);
-			if (!linea.equals("CERTIFICADOCLIENTE")) {
-				write(writer, ERROR_FORMATO);
-				throw new FontFormatException(linea);
-			}
-			
-
-			// ////////////////////////////////////////////////////////////////////////
-			// Enviando el certificado del servidor
-			// ////////////////////////////////////////////////////////////////////////
-			
-			write(writer, "CERTIFICADOSERVIDOR");
-			linea= read(reader);
-			if(!linea.equals(OK))
-			{
-				System.out.println("Error de confirmación, cerrando conexion: "+linea);
-				return;
-			}
-						
-
-			// ////////////////////////////////////////////////////////////////////////
-			// Enviando llave simetrica cifrada con la llave publica del cliente
-			// ////////////////////////////////////////////////////////////////////////
-			write(writer, "CIFRADOKC+");
-			linea= read(reader);
-			if(!linea.equals("CIFRADOKS+"))
-			{
-				System.out.println("Error, no se esperaba esete mensaje: "+linea);
-				return;
-			}
-			//////////////////////////////////////////////////////////////////////////
-			// Recibe la misma llave simetrica enviada cifrada con la llave publica del servidor.
-			// ////////////////////////////////////////////////////////////////////////
-			
-			write(writer, OK);
-			
-			
-			// ////////////////////////////////////////////////////////////////////////
-			// Recibe la consulta del cliente y su digest cifrados con la llave simetrica
-			// ////////////////////////////////////////////////////////////////////////
-			linea= read(reader);
-			if(!linea.equals("CIFRADOLS1"))
-			{
-				System.out.println("Error, no se esperaba esete mensaje: "+linea);
-				return;
-			}
-			
-			// ////////////////////////////////////////////////////////////////////////
-			// Verifica el hash y termina la conexion.
-			// ////////////////////////////////////////////////////////////////////////
-			write(writer, "CIFRADOLS2");
 			System.out.println("Thread " + id + "Terminando\n");
 			
 		} catch (NullPointerException e) {
@@ -207,9 +119,6 @@ public class Worker implements Runnable {
 			printError(e);
 		} catch (FontFormatException e) {
 			// Si hubo errores en el protocolo por parte del cliente.
-			printError(e);
-		} catch (NoSuchAlgorithmException e) {
-			// Si los algoritmos enviados no son soportados por el servidor.
 			printError(e);
 		} catch (IllegalStateException e) {
 			// El certificado no se pudo generar.
