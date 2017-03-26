@@ -21,6 +21,7 @@ public class Servidor {
 
   public final static String FILE_TO_SEND = "./serverData/";  // you may change this
   public final static int BUFFER_SIZE = 8192;
+  public final static int PACKET_SIZE = 8;
   
   /**
 	 * Constante que especifica el tiempo máximo en milisegundos que se esperara 
@@ -43,6 +44,7 @@ public class Servidor {
 	 */
 	private static ServerSocket elSocket;
 	private static Servidor elServidor;
+	private static int numPackets;
 
 	/**
 	 * Metodo main del servidor con seguridad que inicializa un 
@@ -59,7 +61,6 @@ public class Servidor {
 	private void runServidor() {
 
 		int num = 0;
-		int fallos = 0;
 		try {
 			// Crea el socket que escucha en el puerto seleccionado.
 			elSocket = new ServerSocket(PUERTO);
@@ -80,10 +81,13 @@ public class Servidor {
 				num++;
 			}
 		} catch (Exception e) {
-			fallos++;
 			// No deberia alcanzarse en condiciones normales de ejecucion.
 			e.printStackTrace();
 		}
+	}
+
+	public static int getNumPackets() {
+		return numPackets;
 	}
   
   

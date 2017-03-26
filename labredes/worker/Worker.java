@@ -1,6 +1,5 @@
 package labredes.worker;
 
-import java.awt.FontFormatException;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -11,9 +10,6 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.security.NoSuchAlgorithmException;
-import java.security.Security;
-
 import labredes.servidor.Servidor;
 
 
@@ -40,22 +36,20 @@ public class Worker implements Runnable {
 	public static final String EMPEZANDO_TRANSFERENCIA = "Empezando transferencia de archivo";
 	public static final String PARANDO_TRANSFERENCIA = "Parando transferencia de archivo";
 	public static final String ARCHIVOS = "5MB;20MB;50MB";
-	public static final String ARCHVO_SELECCIONADO = "Archivo seleccionado";
-	public static final String TAMANO = "TamaÃ±o archivo seleccionado";
-	public static final String PARAR = "Parar transferencia";
-	public static final String SEGUIR = "Seguir transferencia";
-	public static final String EMPEZAR = "Emperzar transferencia";
+	public static final String ARCHIVO = "Archivo";
+	public static final String TAMANO = "Tamaaño archivo seleccionado";
 	public static final String SEPARADOR = ":";
-	public static final String HOLA = "HOLA";
 	public static final String INIT = "INIT";
 	public static final String RTA = "RTA";
 	public static final String INFO = "INFO";
 	public static final String ERROR = "ERROR";
 	public static final String ERROR_FORMATO = "Error en el formato. Cerrando conexion";
-	
+	public final static String HOLA = "HOLA";
+	public final static String ENVIAR = "ENVIAR";
+	public final static String ENVIANDO = "ENVIANDO";
+	public final static String PARAR = "PARAR";
 	private int id;
 	private Socket ss;
-	//private KeyPair keyPair;
 	
 	public Worker(int pId, Socket pSocket) {
 		id = pId;
@@ -98,74 +92,75 @@ public class Worker implements Runnable {
 	}
 	
 	  public void comienzoEnvio() throws IOException {
-	    FileInputStream fis = null;
-	    BufferedInputStream bis = null;
-	    OutputStream os = null;
-	    ServerSocket servsock = null;
-	    Socket sock = null;
-	    PrintWriter escritor = null;
-	    BufferedReader lector = null;
-	    String fromServer;
-	    String fromClient;
-	    boolean conexion = true;
-	    boolean transferencia = true;
-	    try {
-	      servsock = new ServerSocket(Servidor.PUERTO);
-	      
-	      while(conexion){
-
-	          System.out.println("Waiting...");
-	          sock = servsock.accept();
-	          System.out.println("Accepted connection : " + sock);
-	          conexion = !sock.isConnected();
-	      }
-	      
-	      while (transferencia) {
-	        try {
-	          escritor = new PrintWriter(sock.getOutputStream(), true);
-	          lector = new BufferedReader(new InputStreamReader(
-	    				sock.getInputStream()));
-	        
-	          
-	          fromClient = lector.readLine();
-	          System.out.println(fromClient);
-	          // send file
-	          if(fromClient.equals("ENVIAR")){
-
-	        	  fromServer = "ENVIANDO";
-	              escritor.println(fromServer);
-	                  
-	              File myFile = new File (Servidor.FILE_TO_SEND);
-	              byte [] mybytearray  = new byte [(int)myFile.length()];
-	              fis = new FileInputStream(myFile);
-	              bis = new BufferedInputStream(fis);
-	              bis.read(mybytearray,0,mybytearray.length);
-	              os = sock.getOutputStream();
-	              System.out.println("Sending " + Servidor.FILE_TO_SEND + "(" + mybytearray.length + " bytes)");
-	              os.write(mybytearray,0,mybytearray.length);
-	              os.flush();
-	              System.out.println("Done.");             
-	        	  
-	          }
-	          
-	          if(fromClient.equals("OK"))
-	          {
-	        	  transferencia = false;
-	        	  fromServer = "OK";
-	        	  escritor.println(fromServer);
-	          }
-	          
-	          }
-	        finally {
-	          if (bis != null) bis.close();
-	          if (os != null) os.close();
-	          if (sock!=null) sock.close();
-	        }
-	      }
-	    }
-	    finally {
-	      if (servsock != null) servsock.close();
-	    }
+		  
+//	    FileInputStream fis = null;
+//	    BufferedInputStream bis = null;
+//	    OutputStream os = null;
+//	    ServerSocket servsock = null;
+//	    Socket sock = null;
+//	    PrintWriter escritor = null;
+//	    BufferedReader lector = null;
+//	    String fromServer;
+//	    String fromClient;
+//	    boolean conexion = true;
+//	    boolean transferencia = true;
+//	    try {
+//	      servsock = new ServerSocket(Servidor.PUERTO);
+//	      
+//	      while(conexion){
+//
+//	          System.out.println("Waiting...");
+//	          sock = servsock.accept();
+//	          System.out.println("Accepted connection : " + sock);
+//	          conexion = !sock.isConnected();
+//	      }
+//	      
+//	      while (transferencia) {
+//	        try {
+//	          escritor = new PrintWriter(sock.getOutputStream(), true);
+//	          lector = new BufferedReader(new InputStreamReader(
+//	    				sock.getInputStream()));
+//	        
+//	          
+//	          fromClient = lector.readLine();
+//	          System.out.println(fromClient);
+//	          // send file
+//	          if(fromClient.equals("ENVIAR")){
+//
+//	        	  fromServer = "ENVIANDO";
+//	              escritor.println(fromServer);
+//	                  
+//	              File myFile = new File (Servidor.FILE_TO_SEND);
+//	              byte [] mybytearray  = new byte [(int)myFile.length()];
+//	              fis = new FileInputStream(myFile);
+//	              bis = new BufferedInputStream(fis);
+//	              bis.read(mybytearray,0,mybytearray.length);
+//	              os = sock.getOutputStream();
+//	              System.out.println("Sending " + Servidor.FILE_TO_SEND + "(" + mybytearray.length + " bytes)");
+//	              os.write(mybytearray,0,mybytearray.length);
+//	              os.flush();
+//	              System.out.println("Done.");             
+//	        	  
+//	          }
+//	          
+//	          if(fromClient.equals("OK"))
+//	          {
+//	        	  transferencia = false;
+//	        	  fromServer = "OK";
+//	        	  escritor.println(fromServer);
+//	          }
+//	          
+//	          }
+//	        finally {
+//	          if (bis != null) bis.close();
+//	          if (os != null) os.close();
+//	          if (sock!=null) sock.close();
+//	        }
+//	      }
+//	    }
+//	    finally {
+//	      if (servsock != null) servsock.close();
+//	    }
 	  }
 	
 	/**
@@ -185,16 +180,26 @@ public class Worker implements Runnable {
 			String linea = read(reader);
 			if (!linea.equals(HOLA)) {
 				write(writer, ERROR_FORMATO);
-				throw new FontFormatException(linea);
+				throw new IllegalArgumentException(linea);
 			}
 			
 			//TODO Deberia enviar lista con nombres de archivos divididos por ';' los archivos se deberian encontrar en ./serverData
 			write(writer, ARCHIVOS);
 			
 			linea = read(reader); //Queda esperando por petición de un archivo
-			//TODO verificar que linea es un nombre de archivo y continuar con el protocolo
+			if(!linea.startsWith(ARCHIVO)){
+				write(writer, ERROR_FORMATO);
+				throw new IllegalArgumentException(linea);				
+			}
+			//TODO Recibir información de archivo seleccionado
+			write(writer, Servidor.BUFFER_SIZE + ";" + Servidor.PACKET_SIZE + ";" + Servidor.getNumPackets());
 			
+			if(!linea.equals(ENVIAR)){
+				write(writer, ERROR_FORMATO);
+				throw new IllegalArgumentException(linea);				
+			}
 			
+			envioPaquete();			
 			
 			System.out.println("Thread " + id + "Terminando\n");
 			
@@ -204,7 +209,7 @@ public class Worker implements Runnable {
 		} catch (IOException e) {
 			// Error en la conexion con el cliente.
 			printError(e);
-		} catch (FontFormatException e) {
+		} catch (IllegalArgumentException e) {
 			// Si hubo errores en el protocolo por parte del cliente.
 			printError(e);
 		} catch (IllegalStateException e) {

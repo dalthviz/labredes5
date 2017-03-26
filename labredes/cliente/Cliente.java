@@ -270,7 +270,4 @@ public class Cliente extends Observable{
 			}
 		}
 	}
-
-	
-
 }
