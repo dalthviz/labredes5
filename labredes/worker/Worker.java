@@ -39,7 +39,7 @@ public class Worker implements Runnable {
 	public static final String OK = "OK";
 	public static final String EMPEZANDO_TRANSFERENCIA = "Empezando transferencia de archivo";
 	public static final String PARANDO_TRANSFERENCIA = "Parando transferencia de archivo";
-	public static final String ARCHVOS = "Archivos";
+	public static final String ARCHIVOS = "5MB;20MB;50MB";
 	public static final String ARCHVO_SELECCIONADO = "Archivo seleccionado";
 	public static final String TAMANO = "TamaÃ±o archivo seleccionado";
 	public static final String PARAR = "Parar transferencia";
@@ -93,7 +93,11 @@ public class Worker implements Runnable {
 	}
 	
 
-	  public void sendFile() throws IOException {
+	public void envioPaquete(){
+		
+	}
+	
+	  public void comienzoEnvio() throws IOException {
 	    FileInputStream fis = null;
 	    BufferedInputStream bis = null;
 	    OutputStream os = null;
@@ -184,8 +188,13 @@ public class Worker implements Runnable {
 				throw new FontFormatException(linea);
 			}
 			
-			//TODO Deberia enviar lista con nombres de archivos divididos por ';'
-			write(writer, OK);
+			//TODO Deberia enviar lista con nombres de archivos divididos por ';' los archivos se deberian encontrar en ./serverData
+			write(writer, ARCHIVOS);
+			
+			linea = read(reader); //Queda esperando por petición de un archivo
+			//TODO verificar que linea es un nombre de archivo y continuar con el protocolo
+			
+			
 			
 			System.out.println("Thread " + id + "Terminando\n");
 			

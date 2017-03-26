@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.concurrent.ExecutorService;
@@ -18,9 +19,8 @@ import labredes.worker.Worker;
 
 public class Servidor {
 
-  public final static int SOCKET_PORT = 13267;  // you may change this
-  public final static String FILE_TO_SEND = "C:/Users/Daniel/Desktop/Redes/Laboratorio 5/labredes5/README.md";  // you may change this
-
+  public final static String FILE_TO_SEND = "./serverData/";  // you may change this
+  public final static int BUFFER_SIZE = 8192;
   
   /**
 	 * Constante que especifica el tiempo mÃ¡ximo en milisegundos que se esperara 
@@ -63,6 +63,11 @@ public class Servidor {
 		try {
 			// Crea el socket que escucha en el puerto seleccionado.
 			elSocket = new ServerSocket(PUERTO);
+			elSocket.setReceiveBufferSize(BUFFER_SIZE); 
+			elSocket.setSoTimeout(TIME_OUT); 
+			elSocket.setPerformancePreferences(0, 2, 1); //TODO Seleccionar los valores según pruebas de carga 	 
+			elSocket.bind(new InetSocketAddress(PUERTO)); 
+			
 			System.out.println("Servidor Coordinador escuchando en puerto: " + PUERTO);
 			while (true) {
 				Socket sThread = null;
@@ -70,7 +75,6 @@ public class Servidor {
 				// Recibe conexiones de los clientes
 				// ////////////////////////////////////////////////////////////////////////
 				sThread = elSocket.accept();
-				sThread.setSoTimeout(TIME_OUT);
 				System.out.println("Thread " + num + " recibe a un cliente.");
 				executor.submit(new Worker(num,sThread));
 				num++;

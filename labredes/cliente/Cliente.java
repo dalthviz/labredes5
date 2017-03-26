@@ -120,7 +120,12 @@ public class Cliente extends Observable{
 				bytesRead = inS.read(mybytearray,0,mybytearray.length);
 				current = bytesRead;
 				bos.write(mybytearray, 0 , current);
-				bos.flush();
+				do {
+					bytesRead = inS.read(mybytearray, 0, mybytearray.length);
+					bos.write(mybytearray, 0 , bytesRead);
+					if(bytesRead >= 0) current += bytesRead;
+					System.out.println(current + " bytes read");
+				} while(bytesRead > -1);	
 				paqueteActual++;
 				System.out.println("File " + file_path + " downloaded (" + current + " bytes read)");
 				runDescarga(archivo);
@@ -157,14 +162,13 @@ public class Cliente extends Observable{
 			if(bytesRead > -1){
 			current += bytesRead;
 			bos.write(mybytearray, 0 , current);
-			bos.flush();			
-//			do {
-//				bytesRead = inS.read(mybytearray, 0, mybytearray.length);
-//				bos.write(mybytearray, 0 , bytesRead);
-//				bos.flush();
-//				if(bytesRead >= 0) current += bytesRead;
-//				System.out.println(current + " bytes read");
-//			} while(bytesRead > -1);				
+//			bos.flush();			
+			do {
+				bytesRead = inS.read(mybytearray, 0, mybytearray.length);
+				bos.write(mybytearray, 0 , bytesRead);
+				if(bytesRead >= 0) current += bytesRead;
+				System.out.println(current + " bytes read");
+			} while(bytesRead > -1);				
 			paqueteActual++;
 			}
 			else{
