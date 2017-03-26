@@ -15,6 +15,11 @@ import javax.swing.border.TitledBorder;
 
 public class PanelArchivosDescargados extends JPanel implements ActionListener {
 
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
 	private InterfazCliente principal;
 	private JComboBox archivos;
 	private String archivoSeleccionado;

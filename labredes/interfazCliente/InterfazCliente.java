@@ -56,9 +56,29 @@ public class InterfazCliente extends JFrame implements Observer{
 
 	public void descargar(String archivoSeleccionado) {
 		// TODO Auto-generated method stub
+		try{
+		if(cliente.paqueteActual()==1){
 		cliente.empezarDescarga(archivoSeleccionado);
+		}else{
+			cliente.retomarDescarga(archivoSeleccionado);
+		}
+		}catch(Exception e){
+			JOptionPane.showMessageDialog(this, "Error: "+e.getMessage(), "Error al empezar/continuar la descarga", JOptionPane.ERROR_MESSAGE);
+		}
 		
 	}
+	
+
+	public void pausar() {
+		// TODO Auto-generated method stub
+		try {
+			cliente.detenerDescarga();
+		} catch (Exception e) {
+			e.printStackTrace();
+			JOptionPane.showMessageDialog(this, "Error: "+e.getMessage(), "Error al detener la descarga", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
 	
 	public void establecerConexion()
 	{
@@ -67,15 +87,21 @@ public class InterfazCliente extends JFrame implements Observer{
 		panelConexion.actualizar(cliente.estadoConexion());
 		panelArchivos.actualizar(cliente.listaDeArchivos());
 		}catch(Exception e){
-			JOptionPane.showMessageDialog(this, "Error:" +e.getMessage(), "Error de conexión", JOptionPane.ERROR_MESSAGE);
+			JOptionPane.showMessageDialog(this, "Error: " +e.getMessage(), "Error de conexión", JOptionPane.ERROR_MESSAGE);
 		}
 	}
+	
 
 	@Override
 	public void update(Observable o, Object arg) {
 		// TODO Auto-generated method stub
 		System.out.println("Cambio");
-		
+		panelArchivos.actualizar(cliente.listaDeArchivos());
+		panelArchivosDescargados.actualizarArchivos(cliente.listaDeArchivosDescargados());
+		panelConexion.actualizar(cliente.estadoConexion()+" Descargando: "+cliente.descargando() );
+		if(cliente.paqueteActual()==0){
+			panelArchivos.habilitarNuevaDescarga();
+		}
 	}
 	
 	public static void main(String[] args) {

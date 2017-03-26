@@ -15,56 +15,70 @@ import java.util.ArrayList;
 import java.util.Observable;
 
 
-public class Cliente extends Observable {
+public class Cliente extends Observable{
 
-	public final static int SOCKET_PORT = 4444;      // you may change this
+	public final static int SOCKET_PORT = 4444;      //TODO deberia ser igual que el servidor
 	public final static String SERVER = "127.0.0.1";  // localhost
 	public final static String
-	FILE_TO_RECEIVED_PATH = "./data/";  // you may change this, I give a
-	// different name because i don't want to
-	// overwrite the one used by server...
+	FILE_TO_RECEIVED_PATH = "./data/";  // path donde se descargan lo archivos
 
-	public final static int FILE_SIZE = 6022386; // file size temporary hard coded
-	// should bigger than the file to be downloaded
-	//Servidor debe de especificar tamaño archivo antes de descarga
-
+	//COnstantes de comunicación
 	public final static String HOLA = "HOLA";
 	public final static String ENVIAR = "ENVIAR";
 	public final static String ENVIANDO = "ENVIANDO";
-	
+	public final static String PARAR = "PARAR";
+	public final static String OK = "OK";
+	public final static String PARANDO_TRANSFERENCIA = "PARANDO_TRANSFERENCIA";
+
+	//Atributos de conexión
 	private Socket socket;
 	private InputStream inS;
 	private OutputStream outS;
 	private BufferedReader in;
 	private PrintWriter out;
-	private boolean descargando = false;
+	
+	//Atributos para descarga archivo
 	private int bytesRead;
+	private byte[] mybytearray;
 	private int current = 0;
 	private FileOutputStream fos = null;
 	private BufferedOutputStream bos = null;
 	private String[] listaDeArchivos = null;
 	private ArrayList<String> listaDeArchivosDescargados = new ArrayList<String>();
-	private int file_size;
 	private double tamPaquetes;
 	private int numPaquetes;
+	private int paqueteActual;
+	private int buffer_size;
+	private boolean corriendo = false;
+	private boolean descargando = false;
+	
 
 	public Cliente() {
 
 	}
 
-	public String[] listaDeArchivos (){
+	public synchronized String[] listaDeArchivos (){
 		return listaDeArchivos;
 	}
-	
-	public ArrayList<String> listaDeArchivosDescargados()
+
+	public synchronized ArrayList<String> listaDeArchivosDescargados()
 	{
 		return listaDeArchivosDescargados;
 	}
-	
-	public boolean descargando (){
+
+	public synchronized boolean descargando (){
 		return descargando;
 	}
+
+	public synchronized boolean corriendo()
+	{
+		return corriendo;
+	}
 	
+	public synchronized int paqueteActual(){
+		return paqueteActual;
+	}
+
 	public synchronized void sendMessageToServer(String message) {
 		this.out.println(message);
 	}
@@ -81,108 +95,178 @@ public class Cliente extends Observable {
 		}
 	}
 
-	public void empezarDescarga(String archivo)
+	public void empezarDescarga(String archivo) throws Exception
 	{
 		descargando = true;
 		String file_path = FILE_TO_RECEIVED_PATH + archivo;
 		// receive file
 		sendMessageToServer(archivo);
 		String[] infoEnvio = waitForMessageFromServer().split(";");
-		file_size = Integer.parseInt(infoEnvio[0]);
+		buffer_size = Integer.parseInt(infoEnvio[0]);
 		tamPaquetes = Double.parseDouble(infoEnvio[1]);
 		numPaquetes = Integer.parseInt(infoEnvio[2]);
-		
+		paqueteActual = 1;
+
 		sendMessageToServer(ENVIAR);
 		String respuesta = waitForMessageFromServer();
-		
+
 		if(respuesta.contains(ENVIANDO)){
 			descargando = true;
-		byte [] mybytearray  = new byte [file_size];
-		InputStream is;
-		try {
-			is = socket.getInputStream();
-			fos = new FileOutputStream(file_path);
-			bos = new BufferedOutputStream(fos);
-			bytesRead = is.read(mybytearray,0,mybytearray.length);
-			current = bytesRead;
-
-			do {
-				bytesRead =
-						is.read(mybytearray, current, (mybytearray.length-current));
-				if(bytesRead >= 0) current += bytesRead;
-				System.out.println(current + " bytes read");
-			} while(bytesRead > -1);
-
-			bos.write(mybytearray, 0 , current);
-			bos.flush();
-			System.out.println("File " + file_path
-					+ " downloaded (" + current + " bytes read)");
-			listaDeArchivosDescargados.add(archivo);
-			setChanged();
-			notifyObservers();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}finally {			
+			mybytearray  = new byte [buffer_size];
+			try {
+				
+				fos = new FileOutputStream(file_path);
+				bos = new BufferedOutputStream(fos);
+				bytesRead = inS.read(mybytearray,0,mybytearray.length);
+				current = bytesRead;
+				bos.write(mybytearray, 0 , current);
+				bos.flush();
+				paqueteActual++;
+				System.out.println("File " + file_path + " downloaded (" + current + " bytes read)");
+				runDescarga(archivo);
+				
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
 				try {
 					if (fos != null)
-					fos.close();
+						fos.close();
 					if (bos != null) bos.close();
-				} catch (IOException e) {
+				} catch (IOException a) {
 					// TODO Auto-generated catch block
-					e.printStackTrace();
+					a.printStackTrace();
 				}
-		}
+			}
 		}
 		else{
 			System.out.println(respuesta);
+			throw new Exception("Respuesta inesperada: "+respuesta);
 		}
 
 	}
 
-	public synchronized void detenerDescarga()
+	public void recibirPaquete(String archivo){
+		
+		String file_path = FILE_TO_RECEIVED_PATH + archivo;
+		
+		sendMessageToServer(ENVIAR+":PAQUETE"+paqueteActual+1);
+		String respuesta = waitForMessageFromServer();
+		if(respuesta.contains(ENVIANDO)){
+		try {
+			bytesRead = inS.read(mybytearray,0,mybytearray.length);
+			if(bytesRead > -1){
+			current += bytesRead;
+			bos.write(mybytearray, 0 , current);
+			bos.flush();			
+//			do {
+//				bytesRead = inS.read(mybytearray, 0, mybytearray.length);
+//				bos.write(mybytearray, 0 , bytesRead);
+//				bos.flush();
+//				if(bytesRead >= 0) current += bytesRead;
+//				System.out.println(current + " bytes read");
+//			} while(bytesRead > -1);				
+			paqueteActual++;
+			}
+			else{
+				sendMessageToServer(OK);
+				descargando = false;
+				corriendo = false;
+				paqueteActual = 0;
+			}
+			System.out.println("File " + file_path + " downloaded (" + current + " bytes read)");
+			
+		} catch (IOException e) {
+			e.printStackTrace();			
+			try {
+				if (fos != null) fos.close();
+				if (bos != null) bos.close();
+			} catch (IOException a) {
+				a.printStackTrace();
+			}
+		}
+		}
+	}
+
+	public synchronized void detenerDescarga() throws Exception
 	{
 		descargando = false;
+		sendMessageToServer(PARAR);
+		String respuesta = waitForMessageFromServer();
+		if(respuesta.contains(PARANDO_TRANSFERENCIA)){
+			assert "PAQUETE"+(paqueteActual+1) == respuesta.split(":")[1];
+		}else{
+			throw new Exception("No se recibio respuesta con #paquete de siguiente antes de parada");
+		}
 	}
+
+	public void retomarDescarga(String archivoSeleccionado) {
+		descargando = true;
+		runDescarga(archivoSeleccionado);
+	}
+
 
 	public synchronized String estadoConexion()
 	{
 		String estado = "No se ha establecido una conexión";
 		if (socket != null){
-		return socket.isConnected() && !socket.isClosed()? "Conexión Activa": "Conexión Cerrada";
+			return socket.isConnected() && !socket.isClosed()? "Conexión Activa": "Conexión Cerrada";
 		}
 		return estado;
 	}
-	
+
 	public synchronized void conexion() throws UnknownHostException, IOException
 	{
 		if (socket == null) {
-			
-				this.socket = new Socket(SERVER, SOCKET_PORT);
-				this.inS = this.socket.getInputStream();
-				this.outS = this.socket.getOutputStream();
-				this.in = new BufferedReader(new InputStreamReader(this.inS));
-				this.out = new PrintWriter(this.outS, true);
-				this.descargando = false;
-				
-				this.sendMessageToServer(HOLA);
-				this.listaDeArchivos = this.waitForMessageFromServer().split(";");
-		
-			}
+
+			this.socket = new Socket(SERVER, SOCKET_PORT);
+			this.inS = this.socket.getInputStream();
+			this.outS = this.socket.getOutputStream();
+			this.in = new BufferedReader(new InputStreamReader(this.inS));
+			this.out = new PrintWriter(this.outS, true);
+			this.descargando = false;
+
+			this.sendMessageToServer(HOLA);
+			this.listaDeArchivos = this.waitForMessageFromServer().split(";");
+
+		}
 	}
-	
+
 	public void abrirArchivo(String archivo){
 
-	     try {
-	            File objetofile = new File (FILE_TO_RECEIVED_PATH + archivo);
-	            Desktop.getDesktop().open(objetofile);
+		try {
+			File objetofile = new File (FILE_TO_RECEIVED_PATH + archivo);
+			Desktop.getDesktop().open(objetofile);
 
-	     }catch (IOException ex) {
+		}catch (IOException ex) {
 
-	            System.out.println(ex);
+			System.out.println(ex);
 
-	     }
+		}
 
 	}
+
+
+	public void runDescarga(String archivo) {
+		// TODO Auto-generated method stub
+		corriendo = true;
+		while(corriendo){
+			System.out.println("RUN-Paquete Actual: " + paqueteActual + "\nTamaño: " + tamPaquetes);
+			if(descargando())
+			{
+				recibirPaquete(archivo);
+				if(paqueteActual == numPaquetes)
+				{
+					corriendo = false;
+					descargando = false;
+					paqueteActual = 0;
+					listaDeArchivosDescargados.add(archivo);
+					setChanged();
+					notifyObservers();
+				}
+			}
+		}
+	}
+
 	
+
 }

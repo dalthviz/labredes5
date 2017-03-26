@@ -27,7 +27,10 @@ public class PanelArchivos extends JPanel implements ActionListener{
 		// TODO Auto-generated constructor stub
 		principal = interfaz;
 		setLayout(new GridLayout(2, 2));
-		archivos = new JComboBox();
+		//Solo para probar abrir un archivo
+		String[] descarga = new String[1];
+		descarga[0] = "descarga.txt";
+		archivos = new JComboBox(descarga);
 		archivos.addActionListener(this);
 		setBorder(new TitledBorder("Archivos disponibles"));
 		
@@ -66,6 +69,7 @@ public class PanelArchivos extends JPanel implements ActionListener{
 	{
 		archivos.setEnabled(true);
 		descargar.setEnabled(true);
+		descargar.setText("Descargar");
 		pausar.setEnabled(false);
 	}
 
@@ -77,17 +81,20 @@ public class PanelArchivos extends JPanel implements ActionListener{
 			principal.descargar(archivoSeleccionado);
 			archivos.setEnabled(false);
 			descargar.setEnabled(false);
+			pausar.setEnabled(true);
 		}
 		else if(comando.equals("PAUSAR") ){
 		    pausar.setEnabled(false);
 			descargar.setEnabled(true);
+			descargar.setText("Continuar");
+			principal.pausar();
 		}
 		else if(!comando.equals("DESCARGAR") && !comando.equals("PAUSAR")){
 
 			JComboBox cb = (JComboBox)e.getSource();
 		    archivoSeleccionado = (String)cb.getSelectedItem();
 		    descargar.setEnabled(true);
-		    pausar.setEnabled(true);
+		    pausar.setEnabled(false);
 		}
 		else{
 			JOptionPane.showMessageDialog(this, "Seleccione un archivo a descargar");
