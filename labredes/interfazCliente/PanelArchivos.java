@@ -78,6 +78,7 @@ public class PanelArchivos extends JPanel implements ActionListener{
 		descargar.setEnabled(true);
 		descargar.setText("Descargar");
 		pausar.setEnabled(false);
+		repaint();
 	}
 
 	@Override

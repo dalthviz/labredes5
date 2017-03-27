@@ -195,7 +195,7 @@ public class Worker implements Runnable {
 				else numPackets = numPaquetes+1;
 			}
 			//TODO Enviar información de archivo seleccionado
-			write(writer, Servidor.BUFFER_SIZE + SEPARADOR + Servidor.PACKET_SIZE + SEPARADOR + getNumPackets());
+			write(writer, myFile.length() + SEPARADOR + Servidor.PACKET_SIZE + SEPARADOR + getNumPackets());
 			
 			linea = read(reader); //Queda esperando por petición de un archivo
 			if(!linea.equals(ENVIAR)){
@@ -213,7 +213,7 @@ public class Worker implements Runnable {
 				
 				envioPaquete(numPaquete);	
 								
-				while(!(linea=read(reader)).equals(OK)){}
+				while(!(linea=read(reader)).equals(OK)){
 					if(linea.contains(ENVIAR))
 					{
 						enviarPaquete = linea.split(":");
@@ -222,14 +222,14 @@ public class Worker implements Runnable {
 						envioPaquete(numPaquete);	
 					}else if(linea.equals(PARAR))
 					{
-						write(writer, PARANDO_TRANSFERENCIA);
-						linea = read(reader);
+						System.out.println("Parar envio de paquetes");
 					}
 					else{
 						throw new Exception("Mensaje inesperado");
 					}
+					System.out.println("LINEA: " + linea);
 				}
-			
+			}
 			System.out.println("Thread " + id + "Terminando\n");
 		} catch (NullPointerException e) {
 			// Probablemente la conexion fue interrumpida.
@@ -256,7 +256,6 @@ public class Worker implements Runnable {
 			e.printStackTrace();
 		}  finally {
 			try {
-				ss.close();
 			} catch (Exception e) {
 				// DO NOTHING
 			}

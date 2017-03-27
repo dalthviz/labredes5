@@ -11,6 +11,7 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.MutableComboBoxModel;
 import javax.swing.border.TitledBorder;
 
 public class PanelArchivosDescargados extends JPanel implements ActionListener {
@@ -51,8 +52,15 @@ public class PanelArchivosDescargados extends JPanel implements ActionListener {
 
 	public void actualizarArchivos(ArrayList archivosDescargados)
 	{
-		archivos = new JComboBox(archivosDescargados.toArray());
-		repaint();
+		MutableComboBoxModel model = (MutableComboBoxModel)archivos.getModel();
+		model.removeElement(archivosDescargados);
+		
+		for(String i: (ArrayList<String>)archivosDescargados){
+			model.addElement( archivosDescargados.get(archivosDescargados.indexOf(i)));			
+		}
+		
+		archivos.repaint();
+		archivos.revalidate();
 	}
 	
 	

@@ -2,6 +2,7 @@ package labredes.cliente;
 import java.awt.Desktop;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -46,17 +47,18 @@ public class Cliente extends Observable{
 	private FileOutputStream fos = null;
 	private BufferedOutputStream bos = null;
 	private String[] listaDeArchivos = null;
-	private ArrayList<String> listaDeArchivosDescargados = new ArrayList<String>();
-	private double tamPaquetes;
-	private int numPaquetes;
-	private int paqueteActual = 0;
-	private int buffer_size;
-	private boolean corriendo = false;
-	private boolean descargando = false;
-	
+	ArrayList<String> listaDeArchivosDescargados = new ArrayList<String>();
+	double tamPaquetes;
+	int numPaquetes;
+	int paqueteActual = 0;
+	int file_size;
+	boolean corriendo = false;
+	boolean descargando = false;
+	String archivoDescarga;
+	Descarga descarga;
 
 	public Cliente() {
-
+		descarga = new Descarga(this);
 	}
 
 	public synchronized String[] listaDeArchivos (){
@@ -97,14 +99,15 @@ public class Cliente extends Observable{
 		}
 	}
 
-	public synchronized void empezarDescarga(String archivo) throws Exception
+	public void empezarDescarga(String archivo) throws Exception
 	{
+		archivoDescarga = archivo;
 		descargando = true;
 		String file_path = FILE_TO_RECEIVED_PATH + archivo;
 		// receive file
 		sendMessageToServer(archivo);
 		String[] infoEnvio = waitForMessageFromServer().split(SEPARADOR);
-		buffer_size = Integer.parseInt(infoEnvio[0]);
+		file_size = Integer.parseInt(infoEnvio[0]);
 		tamPaquetes = Double.parseDouble(infoEnvio[1]);
 		numPaquetes = Integer.parseInt(infoEnvio[2]);
 		paqueteActual = 1;
@@ -112,22 +115,30 @@ public class Cliente extends Observable{
 		sendMessageToServer(ENVIAR);
 		
 		descargando = true;
-		mybytearray  = new byte [buffer_size];
+		mybytearray  = new byte [file_size];
 			try {
 				fos = new FileOutputStream(file_path);
-				bos = new BufferedOutputStream(fos);
-				bytesRead = inS.read(mybytearray,0,mybytearray.length);
-				current = bytesRead;
-				bos.write(mybytearray, 0 , current);
-				do {
-					bytesRead = inS.read(mybytearray, 0, mybytearray.length);
-					bos.write(mybytearray, 0 , bytesRead);
-					if(bytesRead >= 0) current += bytesRead;
-					System.out.println(current + " bytes read");
-				} while(bytesRead > -1);	
+//				bos = new BufferedOutputStream(fos);
+//				bytesRead = inS.read(mybytearray,0,mybytearray.length);
+//				current = bytesRead;
+//				
+//				do {
+//					System.out.println("loop "+bytesRead);
+//					bytesRead = inS.read(mybytearray, current, (mybytearray.length-current));
+//					if(bytesRead >= 0) current += bytesRead;
+//					System.out.println(current + " bytes read");
+//				} while(bytesRead > -1);	
+//				bos.write(mybytearray, 0 , current);
+//				bos.flush();
+				DataInputStream flujo = new DataInputStream(inS);
+				//int off = (int)(paqueteActual*tamPaquetes);
+				byte[] b = new byte[(int)tamPaquetes];
+				flujo.read(b, 0, (int)tamPaquetes);
+				fos.write(b);
+				fos.flush();
 				paqueteActual++;
-				System.out.println("File " + file_path + " downloaded (" + current + " bytes read)");
-				runDescarga(archivo);
+				System.out.println("File " + file_path + " downloaded (" + tamPaquetes + " bytes read)");
+				descarga.start();
 				
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -145,32 +156,49 @@ public class Cliente extends Observable{
 		
 	
 
-	public void recibirPaquete(String archivo){
+	public void recibirPaquete(){
 		
-		String file_path = FILE_TO_RECEIVED_PATH + archivo;
+		String file_path = FILE_TO_RECEIVED_PATH + archivoDescarga;
 		
 		sendMessageToServer(ENVIAR+SEPARADOR+PAQUETE+(paqueteActual+1));
 		try {
-			bytesRead = inS.read(mybytearray,0,mybytearray.length);
-			if(bytesRead > -1){
-			current += bytesRead;
-			bos.write(mybytearray, 0 , current);
-//			bos.flush();			
-			do {
-				bytesRead = inS.read(mybytearray, 0, mybytearray.length);
-				bos.write(mybytearray, 0 , bytesRead);
-				if(bytesRead >= 0) current += bytesRead;
-				System.out.println(current + " bytes read");
-			} while(bytesRead > -1);				
+			
+			DataInputStream flujo = new DataInputStream(inS);
+			//int off = (int)(paqueteActual*tamPaquetes);
+			byte[] b = new byte[(int)tamPaquetes];
+			flujo.read(b, 0, (int)tamPaquetes);
+			fos.write(b);
+			fos.flush();
+//			bytesRead = inS.read(mybytearray,0,mybytearray.length);
+//			if(bytesRead > -1){
+//				current = bytesRead;
+//				
+//				do {
+//					System.out.println("loop "+bytesRead);
+//					bytesRead = inS.read(mybytearray, current, (mybytearray.length-current));
+//					if(bytesRead >= 0) current += bytesRead;
+//					System.out.println(current + " bytes read");
+//				} while(bytesRead > -1);	
+//				bos.write(mybytearray, 0 , current);
+//				bos.flush();
+//			current += bytesRead;
+//			bos.write(mybytearray, 0 , current);
+////			bos.flush();			
+//			do {
+//				bytesRead = inS.read(mybytearray, 0, mybytearray.length);
+//				bos.write(mybytearray, 0 , bytesRead);
+//				if(bytesRead >= 0) current += bytesRead;
+//				System.out.println(current + " bytes read");
+//			} while(bytesRead > -1);				
 			paqueteActual++;
-			}
-			else{
-				sendMessageToServer(OK);
-				descargando = false;
-				corriendo = false;
-				paqueteActual = 0;
-			}
-			System.out.println("File " + file_path + " downloaded (" + current + " bytes read)");
+//			}
+//			else{
+//				sendMessageToServer(OK);
+//				descargando = false;
+//				corriendo = false;
+//				paqueteActual = 0;
+//			}
+			System.out.println("File " + file_path + " downloaded (" + tamPaquetes + " bytes read)");
 			
 		} catch (IOException e) {
 			e.printStackTrace();			
@@ -188,17 +216,17 @@ public class Cliente extends Observable{
 	{
 		descargando = false;
 		sendMessageToServer(PARAR);
-		String respuesta = waitForMessageFromServer();
-		if(respuesta.contains(PARANDO_TRANSFERENCIA)){
-			assert PAQUETE+(paqueteActual+1) == respuesta.split(":")[1];
-		}else{
-			throw new Exception("No se recibio respuesta con #paquete de siguiente antes de parada");
-		}
+//		String respuesta = waitForMessageFromServer();
+//		if(respuesta.contains(PARANDO_TRANSFERENCIA)){
+//			assert PAQUETE+(paqueteActual+1) == respuesta.split(":")[1];
+//		}else{
+//			throw new Exception("No se recibio respuesta con #paquete de siguiente antes de parada");
+//		}
 	}
 
-	public void retomarDescarga(String archivoSeleccionado) {
+	public void retomarDescarga() {
 		descargando = true;
-		runDescarga(archivoSeleccionado);
+//		descarga.notify();
 	}
 
 
@@ -244,24 +272,9 @@ public class Cliente extends Observable{
 	}
 
 
-	public void runDescarga(String archivo) {
+	public void cambio() {
 		// TODO Auto-generated method stub
-		corriendo = true;
-		while(corriendo){
-			System.out.println("RUN-Paquete Actual: " + paqueteActual + "\nTamaño: " + tamPaquetes);
-			if(descargando())
-			{
-				recibirPaquete(archivo);
-				if(paqueteActual == numPaquetes)
-				{
-					corriendo = false;
-					descargando = false;
-					paqueteActual = 0;
-					listaDeArchivosDescargados.add(archivo);
-					setChanged();
-					notifyObservers();
-				}
-			}
-		}
+		setChanged();
+		notifyObservers();
 	}
 }

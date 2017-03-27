@@ -61,7 +61,7 @@ public class InterfazCliente extends JFrame implements Observer{
 			System.out.println("Empieza descarga");
 		cliente.empezarDescarga(archivoSeleccionado);
 		}else{
-			cliente.retomarDescarga(archivoSeleccionado);
+			cliente.retomarDescarga();
 		}
 		}catch(Exception e){
 			JOptionPane.showMessageDialog(this, "Error: "+e.getMessage(), "Error al empezar/continuar la descarga", JOptionPane.ERROR_MESSAGE);
@@ -100,7 +100,7 @@ public class InterfazCliente extends JFrame implements Observer{
 		panelArchivos.actualizar(cliente.listaDeArchivos());
 		panelArchivosDescargados.actualizarArchivos(cliente.listaDeArchivosDescargados());
 		panelConexion.actualizar(cliente.estadoConexion()+" Descargando: "+cliente.descargando() );
-		if(cliente.paqueteActual()==0){
+		if(!cliente.descargando()){
 			panelArchivos.habilitarNuevaDescarga();
 		}
 	}
