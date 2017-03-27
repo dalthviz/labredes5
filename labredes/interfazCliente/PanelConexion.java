@@ -41,6 +41,7 @@ public class PanelConexion extends JPanel implements ActionListener {
 	public void actualizar(String estadoActual)
 	{
 		estado.setText(estadoActual);
+		repaint();
 	}
 	
 	@Override

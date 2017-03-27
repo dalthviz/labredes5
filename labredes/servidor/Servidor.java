@@ -20,14 +20,14 @@ import labredes.worker.Worker;
 public class Servidor {
 
   public final static String FILE_TO_SEND = "./serverData/";  // you may change this
-  public final static int BUFFER_SIZE = 8192;
-  public final static int PACKET_SIZE = 8;
+  public final static int BUFFER_SIZE = 600000000;
+  public final static int PACKET_SIZE = 1000;
   
   /**
 	 * Constante que especifica el tiempo máximo en milisegundos que se esperara 
 	 * por la respuesta de un cliente en cada una de las partes de la comunicación
 	 */
-	private static final int TIME_OUT = 10000;
+	private static final int TIME_OUT = 100000;
 
 	/**
 	 * Constante que especifica el numero de threads que se usan en el pool de conexiones.
@@ -44,7 +44,6 @@ public class Servidor {
 	 */
 	private static ServerSocket elSocket;
 	private static Servidor elServidor;
-	private static int numPackets;
 
 	/**
 	 * Metodo main del servidor con seguridad que inicializa un 
@@ -63,9 +62,8 @@ public class Servidor {
 		int num = 0;
 		try {
 			// Crea el socket que escucha en el puerto seleccionado.
-			elSocket = new ServerSocket(PUERTO);
+			elSocket = new ServerSocket();
 			elSocket.setReceiveBufferSize(BUFFER_SIZE); 
-			elSocket.setSoTimeout(TIME_OUT); 
 			elSocket.setPerformancePreferences(0, 2, 1); //TODO Seleccionar los valores seg�n pruebas de carga 	 
 			elSocket.bind(new InetSocketAddress(PUERTO)); 
 			
@@ -76,6 +74,7 @@ public class Servidor {
 				// Recibe conexiones de los clientes
 				// ////////////////////////////////////////////////////////////////////////
 				sThread = elSocket.accept();
+				sThread.setSoTimeout(TIME_OUT); 
 				System.out.println("Thread " + num + " recibe a un cliente.");
 				executor.submit(new Worker(num,sThread));
 				num++;
@@ -85,11 +84,6 @@ public class Servidor {
 			e.printStackTrace();
 		}
 	}
-
-	public static int getNumPackets() {
-		return numPackets;
-	}
-  
-  
+ 
   
 }

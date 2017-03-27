@@ -52,6 +52,7 @@ public class PanelArchivosDescargados extends JPanel implements ActionListener {
 	public void actualizarArchivos(ArrayList archivosDescargados)
 	{
 		archivos = new JComboBox(archivosDescargados.toArray());
+		repaint();
 	}
 	
 	

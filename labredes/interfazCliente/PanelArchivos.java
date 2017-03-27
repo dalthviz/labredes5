@@ -10,9 +10,8 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.MutableComboBoxModel;
 import javax.swing.border.TitledBorder;
-
-import javafx.scene.layout.Border;
 
 public class PanelArchivos extends JPanel implements ActionListener{
 
@@ -28,9 +27,8 @@ public class PanelArchivos extends JPanel implements ActionListener{
 		principal = interfaz;
 		setLayout(new GridLayout(2, 2));
 		//Solo para probar abrir un archivo
-		String[] descarga = new String[1];
-		descarga[0] = "descarga.txt";
-		archivos = new JComboBox(descarga);
+		
+		archivos = new JComboBox();
 		archivos.addActionListener(this);
 		setBorder(new TitledBorder("Archivos disponibles"));
 		
@@ -62,7 +60,16 @@ public class PanelArchivos extends JPanel implements ActionListener{
 	}
 
 	public void actualizar(String[] listaArchivos){
-		archivos = new JComboBox(listaArchivos);
+		System.out.println(listaArchivos[0]+listaArchivos[1]+listaArchivos[2]);
+		MutableComboBoxModel model = (MutableComboBoxModel)archivos.getModel();
+		model.removeElement(listaArchivos);
+		if(model.getSize()<3){
+		model.addElement( listaArchivos[0] );
+		model.addElement( listaArchivos[1] );
+		model.addElement( listaArchivos[2] );
+		}
+		archivos.repaint();
+		archivos.revalidate();
 	}
 	
 	public void habilitarNuevaDescarga()

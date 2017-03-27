@@ -28,6 +28,8 @@ public class Cliente extends Observable{
 	public final static String ENVIANDO = "ENVIANDO";
 	public final static String PARAR = "PARAR";
 	public final static String OK = "OK";
+	public static final String SEPARADOR = ":";
+	public static final String PAQUETE = "PAQUETE";
 	public final static String PARANDO_TRANSFERENCIA = "PARANDO_TRANSFERENCIA";
 
 	//Atributos de conexión
@@ -47,7 +49,7 @@ public class Cliente extends Observable{
 	private ArrayList<String> listaDeArchivosDescargados = new ArrayList<String>();
 	private double tamPaquetes;
 	private int numPaquetes;
-	private int paqueteActual;
+	private int paqueteActual = 0;
 	private int buffer_size;
 	private boolean corriendo = false;
 	private boolean descargando = false;
@@ -95,26 +97,23 @@ public class Cliente extends Observable{
 		}
 	}
 
-	public void empezarDescarga(String archivo) throws Exception
+	public synchronized void empezarDescarga(String archivo) throws Exception
 	{
 		descargando = true;
 		String file_path = FILE_TO_RECEIVED_PATH + archivo;
 		// receive file
 		sendMessageToServer(archivo);
-		String[] infoEnvio = waitForMessageFromServer().split(";");
+		String[] infoEnvio = waitForMessageFromServer().split(SEPARADOR);
 		buffer_size = Integer.parseInt(infoEnvio[0]);
 		tamPaquetes = Double.parseDouble(infoEnvio[1]);
 		numPaquetes = Integer.parseInt(infoEnvio[2]);
 		paqueteActual = 1;
 
 		sendMessageToServer(ENVIAR);
-		String respuesta = waitForMessageFromServer();
-
-		if(respuesta.contains(ENVIANDO)){
-			descargando = true;
-			mybytearray  = new byte [buffer_size];
+		
+		descargando = true;
+		mybytearray  = new byte [buffer_size];
 			try {
-				
 				fos = new FileOutputStream(file_path);
 				bos = new BufferedOutputStream(fos);
 				bytesRead = inS.read(mybytearray,0,mybytearray.length);
@@ -143,20 +142,14 @@ public class Cliente extends Observable{
 				}
 			}
 		}
-		else{
-			System.out.println(respuesta);
-			throw new Exception("Respuesta inesperada: "+respuesta);
-		}
-
-	}
+		
+	
 
 	public void recibirPaquete(String archivo){
 		
 		String file_path = FILE_TO_RECEIVED_PATH + archivo;
 		
-		sendMessageToServer(ENVIAR+":PAQUETE"+paqueteActual+1);
-		String respuesta = waitForMessageFromServer();
-		if(respuesta.contains(ENVIANDO)){
+		sendMessageToServer(ENVIAR+SEPARADOR+PAQUETE+(paqueteActual+1));
 		try {
 			bytesRead = inS.read(mybytearray,0,mybytearray.length);
 			if(bytesRead > -1){
@@ -188,7 +181,7 @@ public class Cliente extends Observable{
 				a.printStackTrace();
 			}
 		}
-		}
+		
 	}
 
 	public synchronized void detenerDescarga() throws Exception
@@ -197,7 +190,7 @@ public class Cliente extends Observable{
 		sendMessageToServer(PARAR);
 		String respuesta = waitForMessageFromServer();
 		if(respuesta.contains(PARANDO_TRANSFERENCIA)){
-			assert "PAQUETE"+(paqueteActual+1) == respuesta.split(":")[1];
+			assert PAQUETE+(paqueteActual+1) == respuesta.split(":")[1];
 		}else{
 			throw new Exception("No se recibio respuesta con #paquete de siguiente antes de parada");
 		}
@@ -230,8 +223,9 @@ public class Cliente extends Observable{
 			this.descargando = false;
 
 			this.sendMessageToServer(HOLA);
-			this.listaDeArchivos = this.waitForMessageFromServer().split(";");
-
+			this.listaDeArchivos = this.waitForMessageFromServer().split(SEPARADOR);
+			setChanged();
+			notifyObservers();
 		}
 	}
 

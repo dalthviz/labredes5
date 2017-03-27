@@ -10,6 +10,8 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+
+import javafx.scene.control.Separator;
 import labredes.servidor.Servidor;
 
 
@@ -33,11 +35,9 @@ public class Worker implements Runnable {
 	// CONSTANTES PARA LA DEFINICION DEL PROTOCOLO
 	// ----------------------------------------------------
 	public static final String OK = "OK";
-	public static final String EMPEZANDO_TRANSFERENCIA = "Empezando transferencia de archivo";
-	public static final String PARANDO_TRANSFERENCIA = "Parando transferencia de archivo";
-	public static final String ARCHIVOS = "5MB;20MB;50MB";
-	public static final String ARCHIVO = "Archivo";
-	public static final String TAMANO = "Tamaaño archivo seleccionado";
+	public static final String PARANDO_TRANSFERENCIA = "PARANDO_TRANSFERENCIA";
+	public static final String ARCHIVOS = "5MB.txt:20MB.txt:50MB.txt";
+	public static final String ARCHIVO = "ARCHIVO";
 	public static final String SEPARADOR = ":";
 	public static final String INIT = "INIT";
 	public static final String RTA = "RTA";
@@ -48,8 +48,20 @@ public class Worker implements Runnable {
 	public final static String ENVIAR = "ENVIAR";
 	public final static String ENVIANDO = "ENVIANDO";
 	public final static String PARAR = "PARAR";
+	public final static String PAQUETE = "PAQUETE";
+	
 	private int id;
 	private Socket ss;
+	private int archivo = -1;
+	private int numPackets;
+	private File myFile = null;
+	private PrintWriter writer = null;
+	private BufferedReader reader = null;
+	private FileInputStream fis = null;
+	private BufferedInputStream bis = null;
+	private OutputStream os = null;
+	private byte[] mybytearray = new byte[Servidor.BUFFER_SIZE];
+	
 	
 	public Worker(int pId, Socket pSocket) {
 		id = pId;
@@ -87,91 +99,68 @@ public class Worker implements Runnable {
 	}
 	
 
-	public void envioPaquete(){
-		
-	}
+	public void envioPaquete(int numPaquete){
+				
+		 try {
+                          
+             bis.read(mybytearray,Servidor.PACKET_SIZE*numPaquete,Servidor.PACKET_SIZE);
+             os = ss.getOutputStream();
+             System.out.println("Sending " +Servidor.FILE_TO_SEND+ARCHIVOS.split(SEPARADOR)[archivo] + "(" + mybytearray.length + " bytes)");
+             os.write(mybytearray,0,Servidor.PACKET_SIZE);
+             os.flush();	              
+             
+             System.out.println("Done paquete "+numPaquete); 
+       	  
+         }
+	  catch(Exception e){
+		  try {
+				if (bis != null)bis.close();
+		         if (os != null) os.close();
+			} catch (IOException a) {
+				// TODO Auto-generated catch block
+				a.printStackTrace();
+				System.out.println("Envio paquete");
+			}
+	  }       
+
+ }
 	
 	  public void comienzoEnvio() throws IOException {
-		  
-//	    FileInputStream fis = null;
-//	    BufferedInputStream bis = null;
-//	    OutputStream os = null;
-//	    ServerSocket servsock = null;
-//	    Socket sock = null;
-//	    PrintWriter escritor = null;
-//	    BufferedReader lector = null;
-//	    String fromServer;
-//	    String fromClient;
-//	    boolean conexion = true;
-//	    boolean transferencia = true;
-//	    try {
-//	      servsock = new ServerSocket(Servidor.PUERTO);
-//	      
-//	      while(conexion){
-//
-//	          System.out.println("Waiting...");
-//	          sock = servsock.accept();
-//	          System.out.println("Accepted connection : " + sock);
-//	          conexion = !sock.isConnected();
-//	      }
-//	      
-//	      while (transferencia) {
-//	        try {
-//	          escritor = new PrintWriter(sock.getOutputStream(), true);
-//	          lector = new BufferedReader(new InputStreamReader(
-//	    				sock.getInputStream()));
-//	        
-//	          
-//	          fromClient = lector.readLine();
-//	          System.out.println(fromClient);
-//	          // send file
-//	          if(fromClient.equals("ENVIAR")){
-//
-//	        	  fromServer = "ENVIANDO";
-//	              escritor.println(fromServer);
-//	                  
-//	              File myFile = new File (Servidor.FILE_TO_SEND);
-//	              byte [] mybytearray  = new byte [(int)myFile.length()];
-//	              fis = new FileInputStream(myFile);
-//	              bis = new BufferedInputStream(fis);
-//	              bis.read(mybytearray,0,mybytearray.length);
-//	              os = sock.getOutputStream();
-//	              System.out.println("Sending " + Servidor.FILE_TO_SEND + "(" + mybytearray.length + " bytes)");
-//	              os.write(mybytearray,0,mybytearray.length);
-//	              os.flush();
-//	              System.out.println("Done.");             
-//	        	  
-//	          }
-//	          
-//	          if(fromClient.equals("OK"))
-//	          {
-//	        	  transferencia = false;
-//	        	  fromServer = "OK";
-//	        	  escritor.println(fromServer);
-//	          }
-//	          
-//	          }
-//	        finally {
-//	          if (bis != null) bis.close();
-//	          if (os != null) os.close();
-//	          if (sock!=null) sock.close();
-//	        }
-//	      }
-//	    }
-//	    finally {
-//	      if (servsock != null) servsock.close();
-//	    }
+		
+	        try {
+	                  
+	              mybytearray  = new byte [(int)myFile.length()];
+	              fis = new FileInputStream(myFile);
+	              bis = new BufferedInputStream(fis);
+	              
+	              bis.read(mybytearray,0,Servidor.PACKET_SIZE);
+	              os = ss.getOutputStream();
+	              System.out.println("Sending " +Servidor.FILE_TO_SEND+ARCHIVOS.split(SEPARADOR)[archivo] + "(" + mybytearray.length + " bytes)");
+	              os.write(mybytearray,0,Servidor.PACKET_SIZE);
+	              os.flush();	              
+	              
+	              System.out.println("Done paquete 1"); 
+	        	  
+	          }
+		  catch(Exception e){
+			  if (bis != null) bis.close();
+	          if (os != null) os.close();	        
+		  }          
+
 	  }
+	  
+	public synchronized int getNumPackets() {
+			return numPackets;
+	}
 	
 	/**
 	 * Metodo que establece el protocolo de comunicacion con el punto de atencion.
 	  */
 
 	public void run(){
-		try{
-			
-			PrintWriter writer = new PrintWriter(ss.getOutputStream(), true);
-			BufferedReader reader = new BufferedReader(new InputStreamReader(ss.getInputStream()));
+		try{			
+			writer = new PrintWriter(ss.getOutputStream(), true);
+			reader = new BufferedReader(new InputStreamReader(ss.getInputStream()));
 			// ////////////////////////////////////////////////////////////////////////
 			// Recibe HOLA.
 			// En caso de error de formato, cierra la conexion.
@@ -185,24 +174,63 @@ public class Worker implements Runnable {
 			
 			//TODO Deberia enviar lista con nombres de archivos divididos por ';' los archivos se deberian encontrar en ./serverData
 			write(writer, ARCHIVOS);
-			
 			linea = read(reader); //Queda esperando por petición de un archivo
-			if(!linea.startsWith(ARCHIVO)){
+			if(!linea.equals(ARCHIVOS.split(SEPARADOR)[0])&&!linea.equals(ARCHIVOS.split(SEPARADOR)[1])
+					&&!linea.equals(ARCHIVOS.split(SEPARADOR)[2])){
 				write(writer, ERROR_FORMATO);
+				System.out.println("ENTRA EN ERROR");
 				throw new IllegalArgumentException(linea);				
 			}
-			//TODO Recibir información de archivo seleccionado
-			write(writer, Servidor.BUFFER_SIZE + ";" + Servidor.PACKET_SIZE + ";" + Servidor.getNumPackets());
+			//TODO Enviar información de archivo seleccionado
+			else
+			{
+				if (linea.equals(ARCHIVOS.split(SEPARADOR)[0])) archivo = 0;
+				else if (linea.equals(ARCHIVOS.split(SEPARADOR)[1])) archivo = 1;
+				else archivo = 2;
+				int numPaquetes = 0;
+				myFile = new File (Servidor.FILE_TO_SEND+ARCHIVOS.split(SEPARADOR)[archivo]);
+				long tamFile = myFile.length();
+				numPaquetes = (int)(tamFile/Servidor.PACKET_SIZE);
+				if((numPaquetes%Servidor.PACKET_SIZE) == 0)numPackets = numPaquetes;
+				else numPackets = numPaquetes+1;
+			}
+			//TODO Enviar información de archivo seleccionado
+			write(writer, Servidor.BUFFER_SIZE + SEPARADOR + Servidor.PACKET_SIZE + SEPARADOR + getNumPackets());
 			
+			linea = read(reader); //Queda esperando por petición de un archivo
 			if(!linea.equals(ENVIAR)){
 				write(writer, ERROR_FORMATO);
 				throw new IllegalArgumentException(linea);				
 			}
+			//Servidor -> "ENVIANDO:PAQUETE1"
+			comienzoEnvio();
 			
-			envioPaquete();			
+			linea = read(reader);
+			if(linea.contains(ENVIAR)){//Cliente -> "ENVIAR"
+				String[] enviarPaquete = linea.split(":");
+				String paquete = enviarPaquete[1];
+				int numPaquete = Integer.parseInt(paquete.replace("PAQUETE", ""));
+				
+				envioPaquete(numPaquete);	
+								
+				while(!(linea=read(reader)).equals(OK)){}
+					if(linea.contains(ENVIAR))
+					{
+						enviarPaquete = linea.split(":");
+						paquete = enviarPaquete[1];
+						numPaquete = Integer.parseInt(paquete.replace("PAQUETE", ""));						
+						envioPaquete(numPaquete);	
+					}else if(linea.equals(PARAR))
+					{
+						write(writer, PARANDO_TRANSFERENCIA);
+						linea = read(reader);
+					}
+					else{
+						throw new Exception("Mensaje inesperado");
+					}
+				}
 			
 			System.out.println("Thread " + id + "Terminando\n");
-			
 		} catch (NullPointerException e) {
 			// Probablemente la conexion fue interrumpida.
 			printError(e);

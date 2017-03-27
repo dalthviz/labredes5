@@ -57,7 +57,8 @@ public class InterfazCliente extends JFrame implements Observer{
 	public void descargar(String archivoSeleccionado) {
 		// TODO Auto-generated method stub
 		try{
-		if(cliente.paqueteActual()==1){
+		if(cliente.paqueteActual()== 0){
+			System.out.println("Empieza descarga");
 		cliente.empezarDescarga(archivoSeleccionado);
 		}else{
 			cliente.retomarDescarga(archivoSeleccionado);
